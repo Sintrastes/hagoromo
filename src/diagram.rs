@@ -16,6 +16,8 @@ pub(crate) enum DiagramNode {
     StrokedTrail { trail: Trail, start: Point },
     Circle { radius: f64 },
     Rect { width: f64, height: f64 },
+    /// An arbitrary filled polygon. Vertices are in local coordinates.
+    Polygon(Vec<Point>),
     /// Text centered at the origin. Font size in diagram units.
     Text { content: String, font_size: f64 },
     Styled { style: Style, child: Arc<DiagramNode> },

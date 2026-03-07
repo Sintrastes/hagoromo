@@ -112,6 +112,11 @@ fn render_node(node: &DiagramNode, xf: Affine, style: &Style, svg: &mut String) 
             emit_polygon(&corners, style, svg);
         }
 
+        DiagramNode::Polygon(pts) => {
+            let transformed: Vec<Point> = pts.iter().map(|&p| xf * p).collect();
+            emit_polygon(&transformed, style, svg);
+        }
+
         DiagramNode::Text { content, font_size } => {
             let origin = xf * Point::ORIGIN;
             let scale = affine_scale(xf);

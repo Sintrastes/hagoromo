@@ -37,7 +37,8 @@ pub use diagram::{Diagram, stroke_trail};
 pub use envelope::BoundingBox;
 
 // Primitives
-pub use primitives::{circle, rect, square, strut_x, strut_y, text};
+pub use primitives::{circle, equilateral_triangle, polygon, rect, square, strut_x, strut_y, text};
+pub use kurbo::Point;
 
 // Layout combinators
 pub use combinators::{atop, beside, hcat, hcat_sep, position, vcat, vcat_sep};

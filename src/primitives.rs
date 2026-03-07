@@ -2,7 +2,7 @@
 //!
 //! All shapes are centered at the origin by convention (matching Haskell diagrams).
 
-use kurbo::Rect;
+use kurbo::{Point, Rect};
 
 use crate::diagram::{Diagram, DiagramNode};
 use crate::envelope::BoundingBox;
@@ -46,6 +46,39 @@ pub fn text(content: impl Into<String>, font_size: f64) -> Diagram {
             approx_h / 2.0,
         )),
     )
+}
+
+/// A filled polygon defined by the given vertices (in local coordinates).
+///
+/// The vertices should be specified in order (clockwise or counter-clockwise).
+/// The polygon is centered at the centroid of its vertices.
+///
+/// The bounding box is the tight AABB of all vertices.
+pub fn polygon(vertices: &[Point]) -> Diagram {
+    assert!(vertices.len() >= 3, "polygon requires at least 3 vertices");
+    // Center at the centroid so the origin is the visual center.
+    let cx = vertices.iter().map(|p| p.x).sum::<f64>() / vertices.len() as f64;
+    let cy = vertices.iter().map(|p| p.y).sum::<f64>() / vertices.len() as f64;
+    let centered: Vec<Point> = vertices.iter().map(|p| Point::new(p.x - cx, p.y - cy)).collect();
+    let bbox = BoundingBox::from_points(&centered);
+    Diagram::from_node(DiagramNode::Polygon(centered), bbox)
+}
+
+/// An equilateral triangle with the given `side` length, centered at its
+/// centroid (origin). The apex points upward (−y in screen coordinates).
+///
+/// Corresponds to Haskell's `triangle s # reflectY` (our +y-down convention
+/// means this already points upward visually).
+pub fn equilateral_triangle(side: f64) -> Diagram {
+    let h = side * 3_f64.sqrt() / 2.0;
+    // Centroid is 1/3 of height from the base, 2/3 from the apex.
+    let base_y = h / 3.0;       // distance from centroid to base (downward = +y)
+    let apex_y = 2.0 * h / 3.0; // distance from centroid to apex (upward = −y)
+    polygon(&[
+        Point::new(-side / 2.0, base_y),  // bottom-left
+        Point::new(side / 2.0, base_y),   // bottom-right
+        Point::new(0.0, -apex_y),          // apex (top)
+    ])
 }
 
 /// An invisible horizontal spacer of the given `width`. No visual output.
