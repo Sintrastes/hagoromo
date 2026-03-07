@@ -54,6 +54,15 @@ pub const TRANSPARENT: Color = Color::rgba(0.0, 0.0, 0.0, 0.0);
 
 // ── Style ────────────────────────────────────────────────────────────────────
 
+/// A stroke dash pattern.
+#[derive(Clone, Debug)]
+pub struct DashPattern {
+    /// On/off dash lengths in diagram units.
+    pub dashes: Vec<f64>,
+    /// Phase offset into the pattern.
+    pub offset: f64,
+}
+
 /// Rendering style for a diagram element.
 ///
 /// All fields are `Option` so that partial styles can be accumulated and
@@ -64,6 +73,8 @@ pub struct Style {
     pub stroke_color: Option<Color>,
     pub stroke_width: Option<f64>,
     pub opacity: Option<f64>,
+    pub dash: Option<DashPattern>,
+    pub bold: Option<bool>,
 }
 
 impl Style {
@@ -75,6 +86,8 @@ impl Style {
             stroke_color: inner.stroke_color.or(self.stroke_color),
             stroke_width: inner.stroke_width.or(self.stroke_width),
             opacity: inner.opacity.or(self.opacity),
+            dash: inner.dash.clone().or_else(|| self.dash.clone()),
+            bold: inner.bold.or(self.bold),
         }
     }
 }
