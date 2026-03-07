@@ -1,6 +1,6 @@
 # Hagoromo
 
-Hagoromo (inspired by the legendary brand of [chalk](https://hagoromo.shop/)) is rusty version of Haskell's [diagrams])(https://hackage.haskell.org/package/diagrams) library -- which lets you create vector graphics via a declarative DSL.
+Hagoromo (inspired by the legendary brand of [chalk](https://hagoromo.shop/)) is rusty version of Haskell's [diagrams](https://hackage.haskell.org/package/diagrams) library -- which lets you create vector graphics via a declarative DSL.
 
 # Motivation
 
