@@ -2,10 +2,11 @@
 //!
 //! All shapes are centered at the origin by convention (matching Haskell diagrams).
 
-use kurbo::{Point, Rect};
+use kurbo::{Point, Rect, Vec2};
 
 use crate::diagram::{Diagram, DiagramNode};
 use crate::envelope::BoundingBox;
+use crate::trail::Trail;
 
 /// A filled/stroked circle of the given `radius`, centered at the origin.
 pub fn circle(radius: f64) -> Diagram {
@@ -64,6 +65,23 @@ pub fn polygon(vertices: &[Point]) -> Diagram {
     Diagram::from_node(DiagramNode::Polygon(centered), bbox)
 }
 
+/// A regular polygon with `sides` sides and `side_len` side length, centered at origin.
+///
+/// The first vertex is at the top (−y direction). Corresponds to Haskell's `regPoly n s`.
+pub fn reg_poly(sides: usize, side_len: f64) -> Diagram {
+    assert!(sides >= 3, "reg_poly requires at least 3 sides");
+    let r = side_len / (2.0 * (std::f64::consts::PI / sides as f64).sin());
+    // Start at top (-π/2) and go clockwise (positive angles in y-down SVG space)
+    let vertices: Vec<Point> = (0..sides)
+        .map(|i| {
+            let angle = -std::f64::consts::FRAC_PI_2
+                + i as f64 * 2.0 * std::f64::consts::PI / sides as f64;
+            Point::new(r * angle.cos(), r * angle.sin())
+        })
+        .collect();
+    polygon(&vertices)
+}
+
 /// An equilateral triangle with the given `side` length, centered at its
 /// centroid (origin). The apex points upward (−y in screen coordinates).
 ///
@@ -79,6 +97,22 @@ pub fn equilateral_triangle(side: f64) -> Diagram {
         Point::new(side / 2.0, base_y),   // bottom-right
         Point::new(0.0, -apex_y),          // apex (top)
     ])
+}
+
+/// An open stroked polyline through the given absolute `points`.
+///
+/// Corresponds to drawing a path with `fromVertices` / `strokeP` in Haskell diagrams.
+/// Returns [`Diagram::empty()`] if fewer than 2 points are provided.
+pub fn polyline(points: &[Point]) -> Diagram {
+    if points.len() < 2 {
+        return Diagram::empty();
+    }
+    let offsets: Vec<Vec2> = points.windows(2).map(|w| w[1] - w[0]).collect();
+    let trail = Trail { segments: offsets };
+    let start = points[0];
+    let all_pts = trail.to_points(start);
+    let bbox = BoundingBox::from_points(&all_pts);
+    Diagram::from_node(DiagramNode::StrokedTrail { trail, start }, bbox)
 }
 
 /// An invisible horizontal spacer of the given `width`. No visual output.

@@ -26,22 +26,28 @@ pub mod style;
 pub mod diagram;
 pub mod envelope;
 pub mod primitives;
+pub mod spline;
 pub mod combinators;
 pub mod backend;
 pub mod backends;
 
 // Core types
 pub use trail::{Trail, hrule, vrule};
-pub use style::{Color, DashPattern, Style, BLACK, BLUE, GREEN, RED, SILVER, WHITE};
-pub use diagram::{Diagram, stroke_trail};
+pub use style::{Color, DashPattern, GradientStop, Measure, RadialGradient, Style};
+pub use style::{BLACK, BLUE, GREEN, RED, SILVER, WHITE};
+pub use style::{NONE, ULTRA_THIN, VERY_THIN, THIN, MEDIUM, THICK, VERY_THICK, ULTRA_THICK};
+pub use diagram::{Diagram, stroke_spline, stroke_trail};
 pub use envelope::BoundingBox;
 
 // Primitives
-pub use primitives::{circle, equilateral_triangle, polygon, rect, square, strut_x, strut_y, text};
-pub use kurbo::Point;
+pub use primitives::{circle, equilateral_triangle, polygon, polyline, rect, reg_poly, square, strut_x, strut_y, text};
+pub use kurbo::{Point, Vec2};
+
+// Spline
+pub use spline::{CubicSpline, cubic_spline};
 
 // Layout combinators
-pub use combinators::{atop, beside, hcat, hcat_sep, position, vcat, vcat_sep};
+pub use combinators::{appends, atop, beside, hcat, hcat_sep, position, vcat, vcat_sep};
 pub use combinators::{DOWN, LEFT, RIGHT, UP};
 
 // Backend / rendering

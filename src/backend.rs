@@ -2,7 +2,7 @@
 
 use crate::backends::svg::SvgBackend;
 use crate::diagram::Diagram;
-use crate::style::Color;
+use crate::style::{Color, Measure, MEDIUM};
 
 /// Options that control how a diagram is rendered.
 #[derive(Clone, Debug)]
@@ -12,7 +12,9 @@ pub struct RenderOptions {
     /// Optional background color. `None` means transparent.
     pub background: Option<Color>,
     /// Default stroke width used when none is set on the diagram.
-    pub default_stroke_width: f64,
+    /// Use [`Measure::Absolute`] for a fixed size or [`Measure::Normalized`]
+    /// (e.g. [`THIN`][crate::style::THIN]) for a size relative to the diagram.
+    pub default_stroke_width: Measure,
 }
 
 impl Default for RenderOptions {
@@ -20,7 +22,7 @@ impl Default for RenderOptions {
         RenderOptions {
             padding: 2.0,
             background: None,
-            default_stroke_width: 0.5,
+            default_stroke_width: MEDIUM,
         }
     }
 }

@@ -35,11 +35,54 @@ impl Color {
         }
     }
 
+    /// Parse an opaque color from a CSS hex string like `"#5E0042"` or `"5E0042"`.
+    pub fn from_hex(hex: &str) -> Self {
+        let hex = hex.trim_start_matches('#');
+        let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+        let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+        let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+        Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
+    }
+
     /// The alpha component as an SVG opacity value (0.0–1.0).
     pub fn alpha(&self) -> f32 {
         self.a
     }
 }
+
+// ── Stroke-width measure ─────────────────────────────────────────────────────
+
+/// A stroke-width value that can be either absolute (diagram units) or
+/// normalized (a fraction of the rendered diagram's larger dimension).
+///
+/// Matches Haskell diagrams' `Measure` / `normalized` / `output` system.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Measure {
+    /// Absolute width in diagram coordinate units.
+    Absolute(f64),
+    /// Width as a fraction of `max(diagram_width, diagram_height)`.
+    Normalized(f64),
+}
+
+impl Measure {
+    /// Resolve to an absolute width given the diagram's larger dimension.
+    pub fn resolve(self, diagram_size: f64) -> f64 {
+        match self {
+            Measure::Absolute(w) => w,
+            Measure::Normalized(f) => f * diagram_size,
+        }
+    }
+}
+
+// Named stroke-width constants (mirror Haskell diagrams' predefined widths).
+pub const NONE: Measure      = Measure::Absolute(0.0);
+pub const ULTRA_THIN: Measure = Measure::Normalized(0.0005);
+pub const VERY_THIN: Measure  = Measure::Normalized(0.001);
+pub const THIN: Measure       = Measure::Normalized(0.002);
+pub const MEDIUM: Measure     = Measure::Normalized(0.005);
+pub const THICK: Measure      = Measure::Normalized(0.01);
+pub const VERY_THICK: Measure = Measure::Normalized(0.02);
+pub const ULTRA_THICK: Measure = Measure::Normalized(0.04);
 
 // ── Named color constants ────────────────────────────────────────────────────
 
@@ -53,6 +96,39 @@ pub const SILVER: Color = Color::rgb(0.753, 0.753, 0.753);
 pub const TRANSPARENT: Color = Color::rgba(0.0, 0.0, 0.0, 0.0);
 
 // ── Style ────────────────────────────────────────────────────────────────────
+
+// ── Radial gradient ───────────────────────────────────────────────────────────
+
+/// A single color stop in a gradient.
+#[derive(Clone, Debug)]
+pub struct GradientStop {
+    /// Position along the gradient axis, in [0.0, 1.0].
+    pub offset: f64,
+    pub color: Color,
+    pub opacity: f64,
+}
+
+/// A radial gradient from a center point outward to a given radius.
+///
+/// Coordinates are in diagram units (`gradientUnits="userSpaceOnUse"`).
+#[derive(Clone, Debug)]
+pub struct RadialGradient {
+    /// Center of the gradient in diagram coordinates.
+    pub cx: f64,
+    pub cy: f64,
+    /// Outer radius in diagram coordinates.
+    pub r: f64,
+    pub stops: Vec<GradientStop>,
+}
+
+impl RadialGradient {
+    /// Create a radial gradient centered at the origin with given radius and stops.
+    pub fn new(r: f64, stops: Vec<GradientStop>) -> Self {
+        RadialGradient { cx: 0.0, cy: 0.0, r, stops }
+    }
+}
+
+// ── Stroke dash pattern ───────────────────────────────────────────────────────
 
 /// A stroke dash pattern.
 #[derive(Clone, Debug)]
@@ -75,6 +151,10 @@ pub struct Style {
     pub opacity: Option<f64>,
     pub dash: Option<DashPattern>,
     pub bold: Option<bool>,
+    /// Radial gradient fill; overrides `fill_color` when present.
+    pub fill_gradient: Option<RadialGradient>,
+    /// CSS `font-family` value for text nodes (e.g. `"Bravura, serif"`).
+    pub font_family: Option<String>,
 }
 
 impl Style {
@@ -88,6 +168,8 @@ impl Style {
             opacity: inner.opacity.or(self.opacity),
             dash: inner.dash.clone().or_else(|| self.dash.clone()),
             bold: inner.bold.or(self.bold),
+            fill_gradient: inner.fill_gradient.clone().or_else(|| self.fill_gradient.clone()),
+            font_family: inner.font_family.clone().or_else(|| self.font_family.clone()),
         }
     }
 }

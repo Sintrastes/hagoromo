@@ -101,6 +101,25 @@ pub fn position(placed: impl IntoIterator<Item = (kurbo::Point, Diagram)>) -> Di
         .fold(Diagram::empty(), |acc, (pt, d)| acc + d.translate(pt.x, pt.y))
 }
 
+/// Place diagrams adjacent to `base` using envelope-based juxtaposition.
+/// Haskell's `appends`.
+///
+/// Each `(dir, d)` places `d` adjacent to `base` in direction `dir`,
+/// with exact support functions touching — like Haskell's `juxtapose`.
+pub fn appends(base: Diagram, items: impl IntoIterator<Item = (Vec2, Diagram)>) -> Diagram {
+    let mut result = base.clone();
+    for (v, d) in items {
+        let len = v.length();
+        if len < 1e-12 { continue; }
+        let unit = v / len;
+        let reach1 = base.support_in(unit).unwrap_or(0.0);
+        let reach2 = d.support_in(-unit).unwrap_or(0.0);
+        let offset = unit * (reach1 + reach2);
+        result = result + d.translate(offset.x, offset.y);
+    }
+    result
+}
+
 // ── Operator overloads ────────────────────────────────────────────────────────
 
 /// `d1 | d2` — horizontal juxtaposition (Haskell's `|||`).

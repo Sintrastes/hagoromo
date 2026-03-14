@@ -2,10 +2,11 @@
 
 use std::sync::Arc;
 
-use kurbo::{Affine, Point, Vec2};
+use kurbo::{Affine, CubicBez, Point, Vec2};
 
 use crate::envelope::BoundingBox;
-use crate::style::{Color, Style};
+use crate::spline::CubicSpline;
+use crate::style::{Color, RadialGradient, Style};
 use crate::trail::Trail;
 
 // ── Internal scene tree ───────────────────────────────────────────────────────
@@ -23,6 +24,8 @@ pub(crate) enum DiagramNode {
     Styled { style: Style, child: Arc<DiagramNode> },
     /// Apply an affine transform to the child (lazy; applied at render time).
     Transformed { affine: Affine, child: Arc<DiagramNode> },
+    /// A cubic Bézier spline. Segments are stored in local coordinates.
+    CubicPath { segments: Vec<CubicBez> },
     /// Superimpose children back-to-front (last = top).
     Group(Vec<Arc<DiagramNode>>),
 }
@@ -95,9 +98,21 @@ impl Diagram {
         })
     }
 
+    /// Apply a radial gradient fill (overrides `fc`). Haskell's `fillTexture`.
+    pub fn fill_gradient(self, grad: RadialGradient) -> Self {
+        self.with_style(Style { fill_gradient: Some(grad), ..Default::default() })
+    }
+
     /// Set bold text rendering (affects Text nodes inside this diagram).
     pub fn bold(self) -> Self {
         self.with_style(Style { bold: Some(true), ..Default::default() })
+    }
+
+    /// Set the CSS `font-family` for text nodes inside this diagram.
+    ///
+    /// Example: `.font_family("Bravura, serif")` for SMuFL/sagittal characters.
+    pub fn font_family(self, family: impl Into<String>) -> Self {
+        self.with_style(Style { font_family: Some(family.into()), ..Default::default() })
     }
 
     /// Place a solid background rectangle (filled with `color`) behind this diagram.
@@ -216,6 +231,16 @@ impl Diagram {
         }
     }
 
+    // ── Exact support function ────────────────────────────────────────────
+
+    /// Exact support function: max dot-product of diagram points with `dir`.
+    ///
+    /// More accurate than the AABB-based `bbox.extent_in` for non-axis-aligned
+    /// directions. Used by [`crate::combinators::appends`] for correct placement.
+    pub fn support_in(&self, dir: Vec2) -> Option<f64> {
+        support_node(&self.node, Affine::IDENTITY, dir)
+    }
+
     // ── Internal constructor ──────────────────────────────────────────────
 
     pub(crate) fn from_node(node: DiagramNode, bbox: BoundingBox) -> Self {
@@ -251,6 +276,74 @@ impl std::ops::AddAssign for Diagram {
     }
 }
 
+// ── Exact support function (internal) ────────────────────────────────────────
+
+/// Recursively compute the exact support function of a node in direction `dir`.
+///
+/// `xf` accumulates all affine transforms applied to this node.
+/// Returns `None` for empty / invisible nodes.
+fn support_node(node: &DiagramNode, xf: Affine, dir: Vec2) -> Option<f64> {
+    match node {
+        DiagramNode::Empty => None,
+
+        DiagramNode::Polygon(pts) => pts
+            .iter()
+            .map(|&p| {
+                let tp = xf * p;
+                tp.x * dir.x + tp.y * dir.y
+            })
+            .reduce(f64::max),
+
+        DiagramNode::StrokedTrail { trail, start } => trail
+            .to_points(*start)
+            .into_iter()
+            .map(|p| {
+                let tp = xf * p;
+                tp.x * dir.x + tp.y * dir.y
+            })
+            .reduce(f64::max),
+
+        DiagramNode::Circle { radius } => {
+            let c = xf * Point::ORIGIN;
+            // Exact support of a circle: center·dir + r·|scale|
+            let coeffs = xf.as_coeffs();
+            let scale = (coeffs[0] * coeffs[0] + coeffs[1] * coeffs[1]).sqrt();
+            Some(c.x * dir.x + c.y * dir.y + radius * scale)
+        }
+
+        DiagramNode::Rect { width, height } => {
+            let (hw, hh) = (width / 2.0, height / 2.0);
+            [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
+                .iter()
+                .map(|&(x, y)| {
+                    let tp = xf * Point::new(x, y);
+                    tp.x * dir.x + tp.y * dir.y
+                })
+                .reduce(f64::max)
+        }
+
+        DiagramNode::Text { .. } => None,
+
+        DiagramNode::CubicPath { segments } => segments
+            .iter()
+            .flat_map(|s| [s.p0, s.p1, s.p2, s.p3])
+            .map(|p| {
+                let tp = xf * p;
+                tp.x * dir.x + tp.y * dir.y
+            })
+            .reduce(f64::max),
+
+        DiagramNode::Styled { child, .. } => support_node(child, xf, dir),
+
+        DiagramNode::Transformed { affine, child } => support_node(child, xf * *affine, dir),
+
+        DiagramNode::Group(children) => children
+            .iter()
+            .filter_map(|child| support_node(child, xf, dir))
+            .reduce(f64::max),
+    }
+}
+
 // ── Public constructors ───────────────────────────────────────────────────────
 
 /// Convert a [`Trail`] into a stroked (open) [`Diagram`]. Haskell's `strokeT`.
@@ -258,6 +351,24 @@ pub fn stroke_trail(trail: Trail) -> Diagram {
     let pts = trail.to_points(Point::ORIGIN);
     let bbox = BoundingBox::from_points(&pts);
     Diagram::from_node(DiagramNode::StrokedTrail { trail, start: Point::ORIGIN }, bbox)
+}
+
+/// Render a [`CubicSpline`] as a stroked open [`Diagram`]. Haskell's `strokeLocTrail`.
+pub fn stroke_spline(spline: &CubicSpline) -> Diagram {
+    use kurbo::ParamCurveExtrema;
+    let bbox = if spline.segments.is_empty() {
+        BoundingBox::EMPTY
+    } else {
+        let r = spline.segments.iter().map(|s| s.bounding_box()).fold(
+            spline.segments[0].bounding_box(),
+            |acc, r| kurbo::Rect::new(
+                acc.x0.min(r.x0), acc.y0.min(r.y0),
+                acc.x1.max(r.x1), acc.y1.max(r.y1),
+            ),
+        );
+        BoundingBox::from_rect(r)
+    };
+    Diagram::from_node(DiagramNode::CubicPath { segments: spline.segments.clone() }, bbox)
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

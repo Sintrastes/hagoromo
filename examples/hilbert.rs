@@ -12,7 +12,7 @@
 //! diagram = strokeT (hilbert 6) # lc silver # opacity 0.3
 //! ```
 
-use hagoromo::{hrule, render_svg, stroke_trail, vrule, RenderOptions, Trail, SILVER};
+use hagoromo::{hrule, render_svg, stroke_trail, vrule, Measure, RenderOptions, Trail, SILVER};
 
 fn hilbert(n: u32) -> Trail {
     if n == 0 {
@@ -37,7 +37,7 @@ fn main() {
 
     let diagram = stroke_trail(trail).lc(SILVER).opacity(0.3);
 
-    let opts = RenderOptions { default_stroke_width: 0.4, ..Default::default() };
+    let opts = RenderOptions { default_stroke_width: Measure::Absolute(0.4), ..Default::default() };
     let svg = render_svg(&diagram, &opts);
 
     print!("{svg}");

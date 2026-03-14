@@ -237,7 +237,7 @@ fn main() {
     let opts = RenderOptions {
         padding: 14.0,
         background: Some(Color::rgb(0.82, 0.79, 0.74)),
-        default_stroke_width: 0.0,
+        default_stroke_width: Measure::Absolute(0.0),
     };
 
     let svg = render_svg(&diagram, &opts);
