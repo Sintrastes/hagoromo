@@ -1,5 +1,7 @@
 [package]
 name = "hagoromo"
+license = "MIT"
+description = "Declarative vector graphics DSL inspired by the Haskell diagrams package."
 version = "0.1.0"
 edition = "2021"
 
