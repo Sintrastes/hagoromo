@@ -20,6 +20,16 @@ impl Color {
         Color { r, g, b, a: 1.0 }
     }
 
+    /// Construct an opaque color from byte values.
+    pub const fn rgb_bytes(r: u8, g: u8, b: u8) -> Self {
+        Color {
+            r: (r as f32) / 255.0,
+            g: (g as f32) / 255.0,
+            b: (b as f32) / 255.0,
+            a: 1.0,
+        }
+    }
+
     /// Convert to an SVG color string: either `"none"` (fully transparent) or
     /// a hex string like `"#c0c0c0"`.
     pub fn to_svg_color(&self) -> String {
@@ -75,12 +85,12 @@ impl Measure {
 }
 
 // Named stroke-width constants (mirror Haskell diagrams' predefined widths).
-pub const NONE: Measure      = Measure::Absolute(0.0);
+pub const NONE: Measure = Measure::Absolute(0.0);
 pub const ULTRA_THIN: Measure = Measure::Normalized(0.0005);
-pub const VERY_THIN: Measure  = Measure::Normalized(0.001);
-pub const THIN: Measure       = Measure::Normalized(0.002);
-pub const MEDIUM: Measure     = Measure::Normalized(0.005);
-pub const THICK: Measure      = Measure::Normalized(0.01);
+pub const VERY_THIN: Measure = Measure::Normalized(0.001);
+pub const THIN: Measure = Measure::Normalized(0.002);
+pub const MEDIUM: Measure = Measure::Normalized(0.005);
+pub const THICK: Measure = Measure::Normalized(0.01);
 pub const VERY_THICK: Measure = Measure::Normalized(0.02);
 pub const ULTRA_THICK: Measure = Measure::Normalized(0.04);
 
@@ -124,7 +134,12 @@ pub struct RadialGradient {
 impl RadialGradient {
     /// Create a radial gradient centered at the origin with given radius and stops.
     pub fn new(r: f64, stops: Vec<GradientStop>) -> Self {
-        RadialGradient { cx: 0.0, cy: 0.0, r, stops }
+        RadialGradient {
+            cx: 0.0,
+            cy: 0.0,
+            r,
+            stops,
+        }
     }
 }
 
@@ -168,8 +183,14 @@ impl Style {
             opacity: inner.opacity.or(self.opacity),
             dash: inner.dash.clone().or_else(|| self.dash.clone()),
             bold: inner.bold.or(self.bold),
-            fill_gradient: inner.fill_gradient.clone().or_else(|| self.fill_gradient.clone()),
-            font_family: inner.font_family.clone().or_else(|| self.font_family.clone()),
+            fill_gradient: inner
+                .fill_gradient
+                .clone()
+                .or_else(|| self.fill_gradient.clone()),
+            font_family: inner
+                .font_family
+                .clone()
+                .or_else(|| self.font_family.clone()),
         }
     }
 }
@@ -187,8 +208,15 @@ mod tests {
 
     #[test]
     fn merge_inner_wins() {
-        let outer = Style { stroke_color: Some(BLACK), stroke_width: Some(1.0), ..Default::default() };
-        let inner = Style { stroke_color: Some(RED), ..Default::default() };
+        let outer = Style {
+            stroke_color: Some(BLACK),
+            stroke_width: Some(1.0),
+            ..Default::default()
+        };
+        let inner = Style {
+            stroke_color: Some(RED),
+            ..Default::default()
+        };
         let merged = outer.merge_over(&inner);
         assert_eq!(merged.stroke_color, Some(RED));
         assert_eq!(merged.stroke_width, Some(1.0)); // falls through from outer
