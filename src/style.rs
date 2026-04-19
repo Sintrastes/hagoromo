@@ -2,6 +2,7 @@
 
 /// An RGBA color with components in [0.0, 1.0].
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Color {
     pub r: f32,
     pub g: f32,
@@ -22,6 +23,16 @@ impl Color {
 
     /// Construct an opaque color from byte values.
     pub const fn rgb_bytes(r: u8, g: u8, b: u8) -> Self {
+        Color {
+            r: (r as f32) / 255.0,
+            g: (g as f32) / 255.0,
+            b: (b as f32) / 255.0,
+            a: 1.0,
+        }
+    }
+
+    /// Construct an opaque color from byte values.
+    pub const fn rgba_bytes(r: u8, g: u8, b: u8) -> Self {
         Color {
             r: (r as f32) / 255.0,
             g: (g as f32) / 255.0,
@@ -54,6 +65,17 @@ impl Color {
         Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
     }
 
+    /// Convert to an 8-digit hex string `#rrggbbaa`, always including alpha.
+    pub fn to_hex(&self) -> String {
+        format!(
+            "#{:02x}{:02x}{:02x}{:02x}",
+            (self.r * 255.0).round() as u8,
+            (self.g * 255.0).round() as u8,
+            (self.b * 255.0).round() as u8,
+            (self.a * 255.0).round() as u8,
+        )
+    }
+
     /// The alpha component as an SVG opacity value (0.0–1.0).
     pub fn alpha(&self) -> f32 {
         self.a
@@ -67,6 +89,7 @@ impl Color {
 ///
 /// Matches Haskell diagrams' `Measure` / `normalized` / `output` system.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Measure {
     /// Absolute width in diagram coordinate units.
     Absolute(f64),
@@ -111,6 +134,7 @@ pub const TRANSPARENT: Color = Color::rgba(0.0, 0.0, 0.0, 0.0);
 
 /// A single color stop in a gradient.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GradientStop {
     /// Position along the gradient axis, in [0.0, 1.0].
     pub offset: f64,
@@ -122,6 +146,7 @@ pub struct GradientStop {
 ///
 /// Coordinates are in diagram units (`gradientUnits="userSpaceOnUse"`).
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RadialGradient {
     /// Center of the gradient in diagram coordinates.
     pub cx: f64,
@@ -147,6 +172,7 @@ impl RadialGradient {
 
 /// A stroke dash pattern.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DashPattern {
     /// On/off dash lengths in diagram units.
     pub dashes: Vec<f64>,
@@ -159,6 +185,7 @@ pub struct DashPattern {
 /// All fields are `Option` so that partial styles can be accumulated and
 /// resolved with an outer default.
 #[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Style {
     pub fill_color: Option<Color>,
     pub stroke_color: Option<Color>,
@@ -204,6 +231,13 @@ mod tests {
         assert_eq!(BLACK.to_svg_color(), "#000000");
         assert_eq!(WHITE.to_svg_color(), "#ffffff");
         assert_eq!(SILVER.to_svg_color(), "#c0c0c0");
+    }
+
+    #[test]
+    fn to_hex_includes_alpha() {
+        assert_eq!(BLACK.to_hex(), "#000000ff");
+        assert_eq!(WHITE.to_hex(), "#ffffffff");
+        assert_eq!(TRANSPARENT.to_hex(), "#00000000");
     }
 
     #[test]

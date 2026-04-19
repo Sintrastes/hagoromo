@@ -18,6 +18,7 @@ use kurbo::{Point, Vec2};
 /// All transformations (`reflect_x`, `reflect_y`, `rotate_by`) consume `self`
 /// and return a new `Trail`, enabling method chaining.
 #[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Trail {
     pub(crate) segments: Vec<Vec2>,
 }

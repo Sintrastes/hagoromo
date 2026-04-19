@@ -11,6 +11,7 @@ use kurbo::{Affine, Point, Rect, Vec2};
 /// `None` represents the empty envelope (no spatial extent). An empty diagram
 /// or an invisible spacer has an empty envelope.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BoundingBox(pub(crate) Option<Rect>);
 
 impl BoundingBox {

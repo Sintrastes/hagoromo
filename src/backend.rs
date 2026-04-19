@@ -6,6 +6,7 @@ use crate::style::{Color, Measure, MEDIUM};
 
 /// Options that control how a diagram is rendered.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RenderOptions {
     /// Padding (in diagram units) added around the bounding box.
     pub padding: f64,

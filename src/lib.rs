@@ -52,3 +52,25 @@ pub use combinators::{DOWN, LEFT, RIGHT, UP};
 
 // Backend / rendering
 pub use backend::{render_svg, RenderOptions};
+
+/// Vertically concatenate diagrams without needing an explicit `vec![]`.
+///
+/// ```rust
+/// use hagoromo::*;
+/// let d = vcat![circle(1.0), rect(2.0, 1.0), square(1.0)];
+/// ```
+#[macro_export]
+macro_rules! vcat {
+    ($($d:expr),* $(,)?) => { $crate::vcat(vec![$($d),*]) };
+}
+
+/// Horizontally concatenate diagrams without needing an explicit `vec![]`.
+///
+/// ```rust
+/// use hagoromo::*;
+/// let d = hcat![circle(1.0), rect(2.0, 1.0), square(1.0)];
+/// ```
+#[macro_export]
+macro_rules! hcat {
+    ($($d:expr),* $(,)?) => { $crate::hcat(vec![$($d),*]) };
+}
