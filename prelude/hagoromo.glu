@@ -1,0 +1,31 @@
+// Hagoromo Gluon prelude.
+//
+// Provides a small operator vocabulary that mirrors Haskell `diagrams`:
+//
+//   d1 <> d2     — superimpose (atop). d2 is drawn on top.
+//   d1 ||| d2    — horizontal juxtaposition (beside RIGHT).
+//   d1 === d2    — vertical juxtaposition (beside DOWN).
+//   d |> f       — forward application (pipe). Like Rust's `.method()` chain.
+//                  `circle 1.0 |> fc color.red |> lw 0.5` reads like
+//                  Haskell's diagrams `circle 1 # fc red # lw 0.5`.
+//
+// Precedences: |> at 0 (loosest), <>/|||/=== at 6.
+
+let prim = import! hagoromo.prim
+
+#[infix(left, 6)]
+let (<>) = \a b -> prim.atop a b
+
+#[infix(left, 6)]
+let (|||) = \a b -> prim.beside_right a b
+
+#[infix(left, 6)]
+let (===) = \a b -> prim.beside_down a b
+
+// Forward application: x |> f  ≡  f x
+// Precedence 8 (tighter than <>/|||/=== at 6) so `d1 <> d2 |> fc red`
+// parses as `d1 <> (d2 |> fc red)`, matching Haskell diagrams `#` behavior.
+#[infix(left, 8)]
+let (|>) = \x f -> f x
+
+{ prim, (<>), (|||), (===), (|>) }

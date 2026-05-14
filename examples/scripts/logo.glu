@@ -1,0 +1,62 @@
+// Hagoromo logo — chalk-on-chalkboard style, ported to Gluon.
+//
+// Run with:
+//   cargo run --features gluon-scripting --example run_gluon examples/scripts/logo.glu > logo.svg
+//
+
+let { prim, (<>), (|>) } = import! hagoromo
+let { circle, rect, text, stroke_trail, hrule, vrule, fc, lc, stroke_width,
+      translate, rotate, render_svg, render_options_bg, color, measure } = prim
+
+// ── Palette ───────────────────────────────────────────────────────────────────
+
+let wood       = color.rgb 0.50 0.33 0.15
+let board      = color.rgb 0.17 0.19 0.21
+let board_edge = color.rgb 0.11 0.13 0.14
+let chalk_draw = color.rgb 0.86 0.84 0.80
+let chalk_text = color.rgb 0.83 0.81 0.77
+let chalk_mid  = color.rgb 0.93 0.91 0.87
+let chalk_hi   = color.rgb 0.99 0.98 0.96
+let chalk_lo   = color.rgb 0.72 0.70 0.66
+let mark       = color.rgb 0.22 0.25 0.28
+let wood_dark  = color.rgb 0.36 0.22 0.08
+let wood_light = color.rgb 0.63 0.44 0.22
+let bg_color   = color.rgb 0.82 0.79 0.74
+
+// ── Board ─────────────────────────────────────────────────────────────────────
+
+let frame   = rect 120.0 80.0 |> fc wood       |> stroke_width 0.0
+let bevel   = rect 106.0 66.0 |> fc board_edge |> stroke_width 0.0
+let surface = rect 104.0 64.0 |> fc board      |> stroke_width 0.0
+
+let g1 = rect 120.0 1.1 |> fc wood_dark  |> stroke_width 0.0 |> translate (-2.0) (-37.5)
+let g2 = rect 120.0 0.7 |> fc wood_light |> stroke_width 0.0 |> translate 1.0 (-35.0)
+let g3 = rect 120.0 1.0 |> fc wood_dark  |> stroke_width 0.0 |> translate 1.0 37.5
+let grain = g1 <> g2 <> g3
+
+let m1 = stroke_trail (hrule 44.0) |> lc mark |> stroke_width 0.3 |> translate (-15.0) (-20.0)
+let m2 = stroke_trail (hrule 32.0) |> lc mark |> stroke_width 0.3 |> translate 8.0 (-8.0)
+let m3 = stroke_trail (hrule 38.0) |> lc mark |> stroke_width 0.3 |> translate (-12.0) 5.0
+let old_marks = m1 <> m2 <> m3
+
+let chalkboard = frame <> grain <> bevel <> surface <> old_marks
+
+// ── Chalk body ────────────────────────────────────────────────────────────────
+
+let chalk_body_mid = rect 92.0 11.0 |> fc chalk_mid |> stroke_width 0.0
+let chalk_body_hi  = rect 92.0 4.6  |> fc chalk_hi  |> stroke_width 0.0 |> translate 0.0 (-3.6)
+let chalk_body_lo  = rect 92.0 5.5  |> fc chalk_lo  |> stroke_width 0.0 |> translate 0.0 3.7
+let chalk_body = chalk_body_mid <> chalk_body_hi <> chalk_body_lo
+
+// -38 degrees ≈ -0.6632 radians
+let chalk = chalk_body |> rotate (-0.6632) |> translate (-30.0) 26.0
+
+// ── Shadow + final composition ────────────────────────────────────────────────
+
+let shadow = rect 122.0 82.0 |> fc (color.rgb 0.10 0.10 0.12) |> stroke_width 0.0 |> translate 3.5 3.5
+
+let diagram = shadow <> chalkboard <> chalk
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+render_svg diagram (render_options_bg 14.0 bg_color measure.none)

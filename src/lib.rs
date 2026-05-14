@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "gluon-scripting", recursion_limit = "1024")]
 //! Hagoromo — a declarative vector graphics library for Rust,
 //! inspired by the Haskell [`diagrams`](https://hackage.haskell.org/package/diagrams) package.
 //!
@@ -30,6 +31,9 @@ pub mod spline;
 pub mod combinators;
 pub mod backend;
 pub mod backends;
+
+#[cfg(feature = "gluon-scripting")]
+pub mod gluon;
 
 // Core types
 pub use trail::{Trail, hrule, vrule};
